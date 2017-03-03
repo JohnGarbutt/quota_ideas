@@ -29,6 +29,20 @@ Project A has two children B and C.
 Lets consider operator adds limits to project A,
 10 VPUs and 10 RAM.
 
+POST /keystone/limits/nova_endpoint_uuid/a
+{
+    "limits": [
+        {
+            "resource_class": "compute:VCPU",
+            "max": 10,
+        },
+        {
+            "resource_class": "compute:RAM",
+            "max": 10,
+        }
+    ]
+}
+
 This means project B and C default to the limit -1, i.e they can
 use all of their parents quota. Indeed project A is also allowed
 to use all of its quota.
@@ -100,6 +114,17 @@ its children B and C.
 If project A sets a limit of 2 vCPUs on project B,
 we get different results:
 
+POST /keystone/limits/nova_endpoint_uuid/a
+{
+    "limits": [
+        {
+            "resource_class": "compute:VCPU",
+            "max": 2,
+        },
+    ]
+}
+
+#TODO maybe you always have to set all limits?
 """
 def get_limits_from_keystone(project_id, endpoint="nova_staging_3"):
     # consider project A, with children B and C
