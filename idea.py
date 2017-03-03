@@ -14,7 +14,7 @@ def register_nova_default_limits_for_endpoint():
             "resource_class": "compute:RAM",
             "max": 5,
         },
-    }
+    ]
     # if no limits are set on a project, the above
     # limits are returned
 
@@ -49,22 +49,25 @@ to use all of its quota.
 
 Note: this is in the default no overbook mode
 """
-default_limits = [
-    {
-        "resource_class": "compute:VCPU",
-        "max": 5,
-        "count_scope": [
-            {"project_id": project_id},
-        ]
-    },
-    {
-        "resource_class": "compute:RAM_GB",
-        "max": 5,
-        "count_scope": [
-            {"project_id": project_id},
-        ]
-    }
-]
+
+def _get_default_limits(project_id):
+    default_limits = [
+        {
+            "resource_class": "compute:VCPU",
+            "max": 5,
+            "count_scope": [
+                {"project_id": project_id},
+            ]
+        },
+        {
+            "resource_class": "compute:RAM_GB",
+            "max": 5,
+            "count_scope": [
+                {"project_id": project_id},
+            ]
+        }
+    ]
+    return default_limits
 
 def get_limits_from_keystone(project_id, endpoint="nova_staging_3"):
     # consider project A, with children B and C
@@ -94,7 +97,7 @@ def get_limits_from_keystone(project_id, endpoint="nova_staging_3"):
     if project_id in ["a", "b", "c"]:
         return limits_a_b_c
     else:
-        return default_limits
+        return _get_default_limits(project_id)
 
 """
 
@@ -173,11 +176,12 @@ def get_limits_from_keystone(project_id, endpoint="nova_staging_3"):
     elif project_id in ["a", "c"]:
         return limits_a_c
     else:
-        return default_limits
+        return _get_default_limits(project_id)
 
 
 callbacks = {}
 resource_callback_uuids = {}
+
 
 def register_count(resources, callback):
     callback_uuid = uuid.uuid4().hex
@@ -185,5 +189,18 @@ def register_count(resources, callback):
     for resource in resources:
         resource_callback_uuids[resource] = callback_uuid
 
-def check_usage(project_id, additional_resource=None)
+
+def check_usage(project_id, additional_resource=None):
     limits = get_limits_from_keystone(project_id)
+
+
+def main():
+    print "get limits"
+    print get_limits_from_keystone("a")
+    print get_limits_from_keystone("b")
+    print get_limits_from_keystone("c")
+    print get_limits_from_keystone("x")
+
+
+if __name__ == "__main__":
+    main()
