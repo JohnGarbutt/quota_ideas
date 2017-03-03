@@ -1,4 +1,23 @@
 #!/usr/bin/env python
+
+import uuid
+
+def register_nova_default_limits_for_endpoint():
+    # operator registers the limits in keystone
+    # for a Nova end point
+    end_point_project_limit_defaults = [
+        {
+            "resource_class": "compute:VCPU",
+            "max": 5,
+        },
+        {
+            "resource_class": "compute:RAM",
+            "max": 5,
+        },
+    }
+    # if no limits are set on a project, the above
+    # limits are returned
+
 """
 
   A -----
@@ -16,13 +35,29 @@ to use all of its quota.
 
 Note: this is in the default no overbook mode
 """
+default_limits = [
+    {
+        "resource_class": "compute:VCPU",
+        "max": 5,
+        "count_scope": [
+            {"project_id": project_id},
+        ]
+    },
+    {
+        "resource_class": "compute:RAM_GB",
+        "max": 5,
+        "count_scope": [
+            {"project_id": project_id},
+        ]
+    }
+]
 
 def get_limits_from_keystone(project_id, endpoint="nova_staging_3"):
     # consider project A, with children B and C
     # there is a limit on project A, we default project B and C
     # to have unlimited use of the same scope.
     # ... so we get something like this
-    limits = [
+    limits_a_b_c = [
         {
             "resource_class": "compute:VCPU",
             "max": 10,
@@ -43,9 +78,9 @@ def get_limits_from_keystone(project_id, endpoint="nova_staging_3"):
         }
     ]
     if project_id in ["a", "b", "c"]:
-        return limits
+        return limits_a_b_c
     else:
-        return []
+        return default_limits
 
 """
 
@@ -113,4 +148,17 @@ def get_limits_from_keystone(project_id, endpoint="nova_staging_3"):
     elif project_id in ["a", "c"]:
         return limits_a_c
     else:
-        return []
+        return default_limits
+
+
+callbacks = {}
+resource_callback_uuids = {}
+
+def register_count(resources, callback):
+    callback_uuid = uuid.uuid4().hex
+    callbacks[callback_uuid] = callback
+    for resource in resources:
+        resource_callback_uuids[resource] = callback_uuid
+
+def check_usage(project_id, additional_resource=None)
+    limits = get_limits_from_keystone(project_id)
