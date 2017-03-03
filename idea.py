@@ -193,6 +193,35 @@ def register_count(resources, callback):
 def check_usage(project_id, additional_resource=None):
     limits = get_limits_from_keystone(project_id)
 
+    for limit in limits:
+        resource_class = limit["resource_class"]
+        max_count = limit["max"]
+        scope = limit["count_scope"]
+
+        callback_uuid = resource_callback_uuids.get(resource_class)
+        callback = callbacks[callback_uuid]
+
+        # FIXME - very wasteful
+        sub_counts = callback(scope)
+        count = None
+        for sub_count in sub_counts:
+            sub_count_resource_class = sub_count["resource_class"]
+            if resource_class == sub_count_resource_class:
+                count = sub_count["count"]
+                break
+
+        if not count:
+            raise Exception("missing expected counts")
+
+        result_string = ("for resource:'%(resource_class)s' "
+            "and project:'%(project_id)s' "
+            "max allowed is %(max_count)s for scope %(scope)s "
+            "actual scope count is %(count)s") % locals()
+        if count > max_count:
+            raise Exception("over quota " + result_string)
+        else:
+            print "passed quota check " + result_string
+
 
 def main():
     print "get limits"
@@ -201,6 +230,45 @@ def main():
     print get_limits_from_keystone("c")
     print get_limits_from_keystone("x")
 
+    def count_instances(project_ids):
+        if len(project_ids) != 1 and project_ids[0] != "x":
+            raise NotImplemented()
+        return [
+            {
+                "resource_class": "compute:VCPU",
+                "count": 2
+            },
+            {
+                "resource_class": "compute:RAM_GB",
+                "count": 3
+            },
+        ]
+    register_count(
+        ["compute:VCPU", "compute:RAM_GB"],
+        count_instances)
+
+    # check under
+    check_usage("x")
+
+    def count_instances(project_ids):
+        if len(project_ids) != 1 and project_ids[0] != "x":
+            raise NotImplemented()
+        return [
+            {
+                "resource_class": "compute:VCPU",
+                "count": 3
+            },
+            {
+                "resource_class": "compute:RAM_GB",
+                "count": 10
+            },
+        ]
+    register_count(
+        ["compute:VCPU", "compute:RAM_GB"],
+        count_instances)
+
+    # check over
+    check_usage("x")
 
 if __name__ == "__main__":
     main()
