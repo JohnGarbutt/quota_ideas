@@ -239,11 +239,12 @@ def check_usage(project_id, additional_resource=None):
 
 
 def main():
+    import pprint
     print
     print "***********************************"
     print "First operators sets default limits"
     print "get limits for random project x"
-    print get_limits_from_keystone("x")
+    pprint.pprint(get_limits_from_keystone("x"))
     print
 
     print "***********************************"
@@ -252,14 +253,14 @@ def main():
     print "Then a sets limits for b of 2 vCPUs"
     print
     print "Project B:"
-    print get_limits_from_keystone("b")
+    pprint.pprint(get_limits_from_keystone("b"))
     print
     print "Project A and C get the same limits:"
-    print get_limits_from_keystone("a")
-    print get_limits_from_keystone("c")
+    pprint.pprint(get_limits_from_keystone("a"))
+    pprint.pprint(get_limits_from_keystone("c"))
     print
     print "Project X still gets the default limits"
-    print get_limits_from_keystone("x")
+    pprint.pprint(get_limits_from_keystone("x"))
     print
 
     def count_instances(project_ids):
