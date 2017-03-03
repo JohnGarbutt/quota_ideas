@@ -214,12 +214,23 @@ def check_usage(project_id, additional_resource=None):
             raise Exception("missing expected counts")
 
         # TODO - add in count from additional_resource
-        count = existing_resource_count
+        additional_resource_count = 0
+        if additional_resource is None:
+            additional_resource = []
+        for sub_count in additional_resource:
+            sub_count_resource_class = sub_count["resource_class"]
+            if resource_class == sub_count_resource_class:
+                additional_resource_count = sub_count["count"]
+                break
+
+        count = existing_resource_count + additional_resource_count
         is_over_quota = count > max_count
 
         result_string = ("for resource:'%(resource_class)s' "
             "and project:'%(project_id)s' "
             "max allowed is %(max_count)s for scope %(scope)s "
+            "existing %(existing_resource_count)s "
+            "with extra of %(additional_resource_count)s "
             "actual scope count is %(count)s") % locals()
         if is_over_quota:
             raise Exception("over quota " + result_string)
@@ -275,30 +286,23 @@ def main():
     print
     check_usage("x")
 
-    def count_instances(project_ids):
-        if len(project_ids) != 1 and project_ids[0] != "x":
-            raise NotImplemented()
-        return [
+    print
+    print "***********************************"
+    print "Project x has usage of 2 VCPUs and 3 RAM_GB"
+    print "consider booting an instance"
+    print "check the usage against after extra 3 VPU and 5 RAM"
+    print "expecting overlimit on RAM_GB"
+    print
+    check_usage("x", additional_resource=[
             {
                 "resource_class": "compute:VCPU",
                 "count": 3
             },
             {
                 "resource_class": "compute:RAM_GB",
-                "count": 10
+                "count": 5
             },
-        ]
-    register_count(
-        ["compute:VCPU", "compute:RAM_GB"],
-        count_instances)
-
-    print
-    print "***********************************"
-    print "Project x has usage of 3 VCPUs and 10 RAM_GB"
-    print "check the usage against limits"
-    print "expecting overlimit on RAM_GB"
-    print
-    check_usage("x")
+    ])
 
 if __name__ == "__main__":
     main()
