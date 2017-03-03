@@ -203,32 +203,53 @@ def check_usage(project_id, additional_resource=None):
 
         # FIXME - very wasteful
         sub_counts = callback(scope)
-        count = None
+        existing_resource_count = None
         for sub_count in sub_counts:
             sub_count_resource_class = sub_count["resource_class"]
             if resource_class == sub_count_resource_class:
-                count = sub_count["count"]
+                existing_resource_count = sub_count["count"]
                 break
 
-        if not count:
+        if not existing_resource_count:
             raise Exception("missing expected counts")
+
+        # TODO - add in count from additional_resource
+        count = existing_resource_count
+        is_over_quota = count > max_count
 
         result_string = ("for resource:'%(resource_class)s' "
             "and project:'%(project_id)s' "
             "max allowed is %(max_count)s for scope %(scope)s "
             "actual scope count is %(count)s") % locals()
-        if count > max_count:
+        if is_over_quota:
             raise Exception("over quota " + result_string)
         else:
             print "passed quota check " + result_string
 
 
 def main():
-    print "get limits"
-    print get_limits_from_keystone("a")
-    print get_limits_from_keystone("b")
-    print get_limits_from_keystone("c")
+    print
+    print "***********************************"
+    print "First operators sets default limits"
+    print "get limits for random project x"
     print get_limits_from_keystone("x")
+    print
+
+    print "***********************************"
+    print "Project a has children b and c"
+    print "Then operator sets limits for a of 10 and 10"
+    print "Then a sets limits for b of 2 vCPUs"
+    print
+    print "Project B:"
+    print get_limits_from_keystone("b")
+    print
+    print "Project A and C get the same limits:"
+    print get_limits_from_keystone("a")
+    print get_limits_from_keystone("c")
+    print
+    print "Project X still gets the default limits"
+    print get_limits_from_keystone("x")
+    print
 
     def count_instances(project_ids):
         if len(project_ids) != 1 and project_ids[0] != "x":
@@ -247,7 +268,11 @@ def main():
         ["compute:VCPU", "compute:RAM_GB"],
         count_instances)
 
-    # check under
+    print "***********************************"
+    print "Project x has usage of 2 VCPUs and 3 RAM_GB"
+    print "check the usage against limits"
+    print "expecting a pass"
+    print
     check_usage("x")
 
     def count_instances(project_ids):
@@ -267,7 +292,12 @@ def main():
         ["compute:VCPU", "compute:RAM_GB"],
         count_instances)
 
-    # check over
+    print
+    print "***********************************"
+    print "Project x has usage of 3 VCPUs and 10 RAM_GB"
+    print "check the usage against limits"
+    print "expecting overlimit on RAM_GB"
+    print
     check_usage("x")
 
 if __name__ == "__main__":
